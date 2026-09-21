@@ -20,11 +20,11 @@ const regelungstechnik2 =
 const digitaltechnik =
     new Date("2026-07-27T12:00:00");
 
-
-// Kommende Klausuren
-
 const antrieb =
     new Date("2026-09-21T09:00:00");
+
+
+// Kommende Klausuren
 
 const nachrichtentechnik =
     new Date("2026-09-24T13:30:00");
@@ -53,13 +53,13 @@ function timer() {
         "timer-digital"
     );
 
-
-    // Kommende Klausuren
-
-    berechneTimer(
+    berechneVergangenTimer(
         antrieb,
         "timer-antrieb"
     );
+
+
+    // Kommende Klausuren
 
     berechneTimer(
         nachrichtentechnik,
