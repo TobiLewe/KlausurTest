@@ -1179,7 +1179,6 @@
     menu.hidden = true;
     toggle.setAttribute("aria-expanded", "false");
     toggle.classList.remove("offen");
-    setModuleMenuPageLock(false);
   }
 
   function closeSavedViews() {
@@ -1343,42 +1342,6 @@
     updateModuleFilterButton();
   }
 
-  function setModuleMenuPageLock(locked) {
-    // Beim geöffneten Auswahlmenü darf das Filtern die Scrollposition der
-    // Seite nicht verändern. Das Menü selbst und seine Modulliste bleiben
-    // weiterhin scrollbar.
-    document.documentElement.classList.toggle("modul-menu-open", locked);
-  }
-
-  function positionModuleMenu() {
-    const toggle = document.getElementById("modul-filter-toggle");
-    const menu = document.getElementById("modul-filter-menu");
-    if (!toggle || !menu || menu.hidden) return;
-
-    const rect = toggle.getBoundingClientRect();
-    const gap = 8;
-    const margin = 10;
-    const menuWidth = Math.min(320, window.innerWidth - margin * 2);
-
-    let left = rect.left;
-    if (left + menuWidth > window.innerWidth - margin) {
-      left = window.innerWidth - margin - menuWidth;
-    }
-    left = Math.max(margin, left);
-
-    const menuHeight = Math.min(390, window.innerHeight - rect.bottom - 16);
-    const topBelow = rect.bottom + gap;
-    const topAbove = rect.top - Math.min(390, rect.top - 16) - gap;
-    const top = (menuHeight >= 180 || topBelow <= window.innerHeight - 16)
-      ? topBelow
-      : Math.max(16, topAbove);
-
-    menu.style.left = `${left}px`;
-    menu.style.top = `${Math.max(16, top)}px`;
-    menu.style.width = `${menuWidth}px`;
-    menu.style.maxHeight = `${Math.max(180, Math.min(390, window.innerHeight - Math.max(16, top) - 16))}px`;
-  }
-
   function initModuleFilter() {
     const toggle = document.getElementById("modul-filter-toggle");
     const menu = document.getElementById("modul-filter-menu");
@@ -1387,12 +1350,6 @@
     const optionsWrap = document.getElementById("modul-filter-options");
     if (!toggle || !menu || !wrapper) return;
 
-    // Das Menü wird einmal in den body verschoben. Dadurch ist es vollständig
-    // vom Layout der Tabelle entkoppelt: Filterungen und Reflows können seine
-    // Position anschließend nicht mehr verändern.
-    document.body.appendChild(menu);
-    menu.classList.add("modul-filter-menu-portal");
-
     toggle.addEventListener("click", event => {
       event.stopPropagation();
       closeSavedViews();
@@ -1400,11 +1357,8 @@
       menu.hidden = !open;
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       toggle.classList.toggle("offen", open);
-      setModuleMenuPageLock(open);
-
-      if (open) {
-        if (optionsWrap) optionsWrap.scrollTop = 0;
-        positionModuleMenu();
+      if (open && optionsWrap) {
+        optionsWrap.scrollTop = 0;
       }
     });
 
@@ -1420,11 +1374,6 @@
     });
 
     menu.addEventListener("click", event => event.stopPropagation());
-    window.addEventListener("resize", positionModuleMenu, { passive: true });
-    window.addEventListener("scroll", () => {
-      // Beim Scrollen darf das Menü nicht mitspringen.
-      // Die feste Bildschirmposition bleibt erhalten.
-    }, { passive: true });
   }
 
   function initSavedViews() {
