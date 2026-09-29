@@ -1285,7 +1285,11 @@
 
     optionsWrap.querySelectorAll("input[type='checkbox']").forEach(input => {
       input.addEventListener("change", () => {
+        const pageX = window.scrollX;
+        const pageY = window.scrollY;
+        const optionsScroll = optionsWrap.scrollTop;
         const value = clean(input.value);
+
         if (input.checked && !selectedModules.includes(value)) {
           if (selectedModules.length >= MAX_SELECTED_MODULES) {
             input.checked = false;
@@ -1295,8 +1299,19 @@
         } else if (!input.checked) {
           selectedModules = selectedModules.filter(module => module !== value);
         }
+
         updateModuleFilterButton();
         applyModuleFilter(selectedModules);
+
+        // Die aktuelle Auswahl darf die Position der Liste und der Seite nicht
+        // verändern. Das Menü bleibt an seiner beim Öffnen gesetzten Stelle.
+        optionsWrap.scrollTop = optionsScroll;
+        window.scrollTo(pageX, pageY);
+        requestAnimationFrame(() => {
+          optionsWrap.scrollTop = optionsScroll;
+          window.scrollTo(pageX, pageY);
+          input.focus({preventScroll: true});
+        });
       });
     });
 
@@ -1332,11 +1347,51 @@
     updateModuleFilterButton();
   }
 
+  function positionModuleMenu() {
+    const toggle = document.getElementById("modul-filter-toggle");
+    const menu = document.getElementById("modul-filter-menu");
+    if (!toggle || !menu || menu.hidden) return;
+
+    const rect = toggle.getBoundingClientRect();
+    const gap = 8;
+    const viewportPadding = 10;
+    const menuWidth = Math.min(320, Math.max(220, window.innerWidth - viewportPadding * 2));
+
+    let left = rect.left;
+    left = Math.max(viewportPadding, Math.min(left, window.innerWidth - menuWidth - viewportPadding));
+
+    // Zuerst unterhalb öffnen. Falls dort nicht genug Platz ist, oberhalb öffnen.
+    const belowTop = rect.bottom + gap;
+    const availableBelow = Math.max(0, window.innerHeight - belowTop - viewportPadding);
+    const aboveBottom = rect.top - gap;
+
+    menu.style.width = `${menuWidth}px`;
+    menu.style.left = `${left}px`;
+    menu.style.right = "auto";
+
+    if (availableBelow >= 180 || availableBelow >= aboveBottom) {
+      menu.style.top = `${belowTop}px`;
+    } else {
+      // Die echte Höhe ist nach dem Einblenden bekannt. Danach exakt oberhalb setzen.
+      const menuHeight = Math.min(menu.scrollHeight || 390, window.innerHeight - viewportPadding * 2);
+      menu.style.top = `${Math.max(viewportPadding, aboveBottom - menuHeight)}px`;
+    }
+  }
+
+  function restorePagePosition(x, y) {
+    // Das Aus-/Einblenden von Kurskarten verändert die Tabellenhöhe.
+    // Der Browser darf deshalb beim Wechsel der Auswahl nicht die Seite verschieben.
+    requestAnimationFrame(() => {
+      window.scrollTo(x, y);
+    });
+  }
+
   function initModuleFilter() {
     const toggle = document.getElementById("modul-filter-toggle");
     const menu = document.getElementById("modul-filter-menu");
     const reset = document.getElementById("modul-filter-reset");
     const wrapper = document.querySelector(".modul-select");
+    const optionsWrap = document.getElementById("modul-filter-options");
     if (!toggle || !menu || !wrapper) return;
 
     toggle.addEventListener("click", event => {
@@ -1346,19 +1401,49 @@
       menu.hidden = !open;
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       toggle.classList.toggle("offen", open);
+
+      if (open) {
+        // Einmal beim Öffnen positionieren. Danach wird beim Auswählen NICHT
+        // neu positioniert – dadurch bleibt das Menü absolut ruhig.
+        positionModuleMenu();
+        requestAnimationFrame(positionModuleMenu);
+      }
     });
 
     reset?.addEventListener("click", event => {
       event.stopPropagation();
+      const pageX = window.scrollX;
+      const pageY = window.scrollY;
+      const menuScroll = optionsWrap ? optionsWrap.scrollTop : 0;
       selectedModules = [];
       wrapper.querySelectorAll("input[type='checkbox']").forEach(input => input.checked = false);
       applyModuleFilter([]);
+      if (optionsWrap) optionsWrap.scrollTop = menuScroll;
+      restorePagePosition(pageX, pageY);
     });
 
     menu.addEventListener("click", event => event.stopPropagation());
 
-    // Das Modulmenü bleibt rein per CSS am Auswahlfeld verankert.
-    // Dadurch wird es weder beim Scrollen noch beim Filtern/Neuzeichnen der Tabelle verschoben.
+    // Änderungen an der Tabelle dürfen weder die Position des Menüs noch
+    // die Scrollposition innerhalb der Modulliste beeinflussen.
+    menu.addEventListener("change", event => {
+      const input = event.target.closest?.("input[type='checkbox']");
+      if (!input) return;
+      const pageX = window.scrollX;
+      const pageY = window.scrollY;
+      const menuScroll = optionsWrap ? optionsWrap.scrollTop : 0;
+
+      // Der eigentliche change-Handler in populateModuleFilter() arbeitet zuerst.
+      // Danach stellen wir die beiden Scrollpositionen noch einmal her.
+      requestAnimationFrame(() => {
+        if (optionsWrap) optionsWrap.scrollTop = menuScroll;
+        window.scrollTo(pageX, pageY);
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      if (!menu.hidden) positionModuleMenu();
+    });
   }
 
   function initSavedViews() {

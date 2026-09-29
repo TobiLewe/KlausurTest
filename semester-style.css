@@ -1148,3 +1148,30 @@ html {
     }
 }
 \n\n/* ==========================================================\n   MODUL-AUSWAHLMENÜ – STABIL\n   Das Menü liegt unabhängig vom Tabellenlayout über der Seite.\n   Dadurch verschiebt/verdeckt sich die Auswahlliste nicht, wenn\n   mehrere Module ausgewählt werden.\n   ========================================================== */\n#modul-filter-menu {\n    position: fixed;\n    z-index: 10000;\n    overflow: hidden;\n    box-sizing: border-box;\n    width: 320px;\n    max-width: calc(100vw - 20px);\n}\n\n#modul-filter-options {\n    overflow-y: auto;\n    overscroll-behavior: contain;\n    scrollbar-width: thin;\n}\n\n@media (max-width: 600px) {\n    #modul-filter-menu {\n        max-width: calc(100vw - 20px);\n    }\n}\n
+
+/* ==========================================================
+   MODUL-AUSWAHLMENÜ – ABSOLUT STABIL
+   Die Position wird nur beim Öffnen bzw. bei einer Fenstergröße-
+   änderung gesetzt. Eine Änderung der Tabelle darf sie nicht
+   beeinflussen.
+   ========================================================== */
+#modul-filter-menu {
+    position: fixed !important;
+    margin: 0;
+    transform: none !important;
+    z-index: 10000;
+    overflow: hidden;
+    overflow-anchor: none;
+    box-sizing: border-box;
+}
+
+#modul-filter-menu,
+#modul-filter-options,
+#modul-filter-options * {
+    overflow-anchor: none;
+}
+
+#modul-filter-options {
+    overscroll-behavior: contain;
+    scroll-behavior: auto;
+}
