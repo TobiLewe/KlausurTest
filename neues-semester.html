@@ -1339,32 +1339,6 @@
     const wrapper = document.querySelector(".modul-select");
     if (!toggle || !menu || !wrapper) return;
 
-    function positionModuleMenu() {
-      if (menu.hidden) return;
-      const rect = toggle.getBoundingClientRect();
-      const gap = 8;
-      const viewportPadding = 10;
-      const menuWidth = Math.max(rect.width, 320);
-
-      menu.style.position = "fixed";
-      menu.style.width = `${menuWidth}px`;
-      menu.style.left = `${Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - menuWidth - viewportPadding))}px`;
-
-      const preferredTop = rect.bottom + gap;
-      const estimatedHeight = Math.min(390, Math.max(180, menu.scrollHeight || 390));
-      const fitsBelow = preferredTop + estimatedHeight <= window.innerHeight - viewportPadding;
-      const top = fitsBelow
-        ? preferredTop
-        : Math.max(viewportPadding, rect.top - estimatedHeight - gap);
-
-      menu.style.top = `${top}px`;
-      menu.style.maxHeight = `${Math.max(170, window.innerHeight - top - viewportPadding)}px`;
-      const options = menu.querySelector(".modul-filter-options");
-      if (options) {
-        options.style.maxHeight = `${Math.max(120, window.innerHeight - top - 58)}px`;
-      }
-    }
-
     toggle.addEventListener("click", event => {
       event.stopPropagation();
       closeSavedViews();
@@ -1372,7 +1346,6 @@
       menu.hidden = !open;
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       toggle.classList.toggle("offen", open);
-      if (open) requestAnimationFrame(positionModuleMenu);
     });
 
     reset?.addEventListener("click", event => {
@@ -1384,9 +1357,8 @@
 
     menu.addEventListener("click", event => event.stopPropagation());
 
-    // Das Modulmenü bleibt an der Auswahl verankert und wird beim Scrollen/Resize neu positioniert.
-    window.addEventListener("resize", positionModuleMenu);
-    window.addEventListener("scroll", positionModuleMenu, true);
+    // Das Modulmenü bleibt rein per CSS am Auswahlfeld verankert.
+    // Dadurch wird es weder beim Scrollen noch beim Filtern/Neuzeichnen der Tabelle verschoben.
   }
 
   function initSavedViews() {
