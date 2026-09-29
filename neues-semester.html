@@ -1276,33 +1276,38 @@
 
     optionsWrap.innerHTML = modules.length
       ? modules.map((module, index) => `
-          <label class="modul-option" for="modul-option-${index}">
-            <input id="modul-option-${index}" type="checkbox" value="${esc(module)}" ${selectedModules.includes(module) ? "checked" : ""}>
+          <button type="button" class="modul-option" data-modul-value="${esc(module)}" aria-pressed="${selectedModules.includes(module) ? "true" : "false"}">
             <span class="modul-check" aria-hidden="true"></span>
             <span class="modul-option-text">${esc(module)}</span>
-          </label>
+          </button>
         `).join("")
       : `<div class="modul-option-empty">Keine Module gefunden</div>`;
 
-    optionsWrap.querySelectorAll("input[type='checkbox']").forEach(input => {
-      input.addEventListener("change", () => {
+    optionsWrap.querySelectorAll(".modul-option[data-modul-value]").forEach(option => {
+      // Kein natives Focus-Scrolling innerhalb der Liste: Die geöffnete
+      // Auswahlansicht darf beim Anklicken niemals nachspringen.
+      option.addEventListener("mousedown", event => event.preventDefault());
+      option.addEventListener("click", event => {
+        event.preventDefault();
+        const value = clean(option.dataset.modulValue);
         const optionsScroll = optionsWrap.scrollTop;
-        const value = clean(input.value);
 
-        if (input.checked && !selectedModules.includes(value)) {
-          if (selectedModules.length >= MAX_SELECTED_MODULES) {
-            input.checked = false;
-            return;
-          }
+        if (!selectedModules.includes(value)) {
+          if (selectedModules.length >= MAX_SELECTED_MODULES) return;
           selectedModules.push(value);
-        } else if (!input.checked) {
+          option.setAttribute("aria-pressed", "true");
+        } else {
           selectedModules = selectedModules.filter(module => module !== value);
+          option.setAttribute("aria-pressed", "false");
         }
 
         applyModuleFilter(selectedModules);
 
-        // Die Modulliste selbst bleibt an derselben Scrollposition.
-        optionsWrap.scrollTop = optionsScroll;
+        // Browser-Reflow durch die veränderte Tabelle darf die Modulliste
+        // weder scrollen noch deren sichtbaren Ausschnitt verändern.
+        requestAnimationFrame(() => {
+          optionsWrap.scrollTop = optionsScroll;
+        });
       });
     });
 
@@ -1345,6 +1350,35 @@
     document.documentElement.classList.toggle("modul-menu-open", locked);
   }
 
+  function positionModuleMenu() {
+    const toggle = document.getElementById("modul-filter-toggle");
+    const menu = document.getElementById("modul-filter-menu");
+    if (!toggle || !menu || menu.hidden) return;
+
+    const rect = toggle.getBoundingClientRect();
+    const gap = 8;
+    const margin = 10;
+    const menuWidth = Math.min(320, window.innerWidth - margin * 2);
+
+    let left = rect.left;
+    if (left + menuWidth > window.innerWidth - margin) {
+      left = window.innerWidth - margin - menuWidth;
+    }
+    left = Math.max(margin, left);
+
+    const menuHeight = Math.min(390, window.innerHeight - rect.bottom - 16);
+    const topBelow = rect.bottom + gap;
+    const topAbove = rect.top - Math.min(390, rect.top - 16) - gap;
+    const top = (menuHeight >= 180 || topBelow <= window.innerHeight - 16)
+      ? topBelow
+      : Math.max(16, topAbove);
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${Math.max(16, top)}px`;
+    menu.style.width = `${menuWidth}px`;
+    menu.style.maxHeight = `${Math.max(180, Math.min(390, window.innerHeight - Math.max(16, top) - 16))}px`;
+  }
+
   function initModuleFilter() {
     const toggle = document.getElementById("modul-filter-toggle");
     const menu = document.getElementById("modul-filter-menu");
@@ -1352,6 +1386,12 @@
     const wrapper = document.querySelector(".modul-select");
     const optionsWrap = document.getElementById("modul-filter-options");
     if (!toggle || !menu || !wrapper) return;
+
+    // Das Menü wird einmal in den body verschoben. Dadurch ist es vollständig
+    // vom Layout der Tabelle entkoppelt: Filterungen und Reflows können seine
+    // Position anschließend nicht mehr verändern.
+    document.body.appendChild(menu);
+    menu.classList.add("modul-filter-menu-portal");
 
     toggle.addEventListener("click", event => {
       event.stopPropagation();
@@ -1362,10 +1402,9 @@
       toggle.classList.toggle("offen", open);
       setModuleMenuPageLock(open);
 
-      if (open && optionsWrap) {
-        // Nie neu positionieren: Das Menü ist im .modul-select absolut verankert.
-        // Die Tabelle darunter kann sich beliebig verändern, ohne das Menü zu bewegen.
-        optionsWrap.scrollTop = 0;
+      if (open) {
+        if (optionsWrap) optionsWrap.scrollTop = 0;
+        positionModuleMenu();
       }
     });
 
@@ -1373,12 +1412,19 @@
       event.stopPropagation();
       const menuScroll = optionsWrap ? optionsWrap.scrollTop : 0;
       selectedModules = [];
-      wrapper.querySelectorAll("input[type='checkbox']").forEach(input => input.checked = false);
+      optionsWrap?.querySelectorAll(".modul-option[aria-pressed='true']").forEach(option => option.setAttribute("aria-pressed", "false"));
       applyModuleFilter([]);
-      if (optionsWrap) optionsWrap.scrollTop = menuScroll;
+      requestAnimationFrame(() => {
+        if (optionsWrap) optionsWrap.scrollTop = menuScroll;
+      });
     });
 
     menu.addEventListener("click", event => event.stopPropagation());
+    window.addEventListener("resize", positionModuleMenu, { passive: true });
+    window.addEventListener("scroll", () => {
+      // Beim Scrollen darf das Menü nicht mitspringen.
+      // Die feste Bildschirmposition bleibt erhalten.
+    }, { passive: true });
   }
 
   function initSavedViews() {

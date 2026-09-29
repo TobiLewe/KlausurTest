@@ -1227,3 +1227,57 @@ html.modul-menu-open body {
         max-width: 100% !important;
     }
 }
+
+
+/* ==========================================================
+   MODUL-MENÜ – PORTAL / LAYOUT-UNABHÄNGIG
+   Das Menü liegt direkt unter <body> und ist damit vollständig
+   von der Tabellenhöhe und deren Reflow entkoppelt.
+   ========================================================== */
+#modul-filter-menu.modul-filter-menu-portal {
+    position: fixed !important;
+    z-index: 10000 !important;
+    margin: 0 !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    width: 320px;
+    max-width: calc(100vw - 20px);
+    top: 0;
+    left: 0;
+}
+
+#modul-filter-menu.modul-filter-menu-portal .modul-filter-options {
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    overflow-anchor: none !important;
+}
+
+#modul-filter-menu.modul-filter-menu-portal .modul-option {
+    width: 100%;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font-family: inherit;
+}
+
+#modul-filter-menu.modul-filter-menu-portal .modul-option[aria-pressed="true"] {
+    background: rgba(255,255,255,0.06);
+}
+
+#modul-filter-menu.modul-filter-menu-portal .modul-option[aria-pressed="true"] .modul-check {
+    border-color: #9fcca9;
+    background: #9fcca9;
+}
+
+#modul-filter-menu.modul-filter-menu-portal .modul-option[aria-pressed="true"] .modul-check::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: solid #1e2a20;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
