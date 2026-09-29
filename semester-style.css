@@ -1175,3 +1175,55 @@ html {
     overscroll-behavior: contain;
     scroll-behavior: auto;
 }
+
+/* ==========================================================
+   MODUL-AUSWAHLMENÜ – ENDGÜLTIG STABIL
+   Das Menü bleibt direkt am Modul-Button verankert. Die Seite
+   wird während der Auswahl nicht gescrollt, daher kann eine
+   Änderung der Tabellenhöhe das Menü nicht nach oben schieben.
+   ========================================================== */
+#modul-filter-menu {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 320px !important;
+    max-width: min(320px, calc(100vw - 20px)) !important;
+    z-index: 10000 !important;
+    margin: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+    box-sizing: border-box;
+}
+
+.modul-select {
+    position: relative !important;
+}
+
+#modul-filter-options {
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #666 transparent;
+}
+
+html.modul-menu-open,
+html.modul-menu-open body {
+    overscroll-behavior: none;
+}
+
+html.modul-menu-open {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
+html.modul-menu-open body {
+    overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+    #modul-filter-menu {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
